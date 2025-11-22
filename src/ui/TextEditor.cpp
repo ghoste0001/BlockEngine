@@ -1,4 +1,5 @@
 #include "TextEditor.h"
+#include "../datatypes/Task.h" 
 
 int TextEditor::GetLineCount() {
     int count = 1;
@@ -10,12 +11,13 @@ int TextEditor::GetLineCount() {
 
 void TextEditor::ExecuteCurrentScript() {
     if (text.empty()) return;
-    int tasksBefore = g_tasks.size();
+    
+    // We need the main Lua state to run tasks
+    if (!L) return; 
 
     runningTask = Task_Run(L, text);
 
-    int tasksAfter = g_tasks.size();
-    if (tasksAfter > tasksBefore) {
+    if (runningTask) {
         executedScript = true;
     }
 }
@@ -28,13 +30,13 @@ void TextEditor::StopCurrentScript() {
     }
 }
 
+// Helper for ImGui
 int InputTextCallback(ImGuiInputTextCallbackData* data) {
     if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
         std::string* str = reinterpret_cast<std::string*>(data->UserData);
         str->resize(data->BufTextLen);
         data->Buf = str->data();
     }
-
     return 0;
 }
 
@@ -52,44 +54,41 @@ void TextEditor::Draw() {
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New", "Ctrl+N")) {}
-
             ImGui::Separator();
             if (ImGui::MenuItem("Open", "Ctrl+N")) {}
-
             ImGui::Separator();
             if (ImGui::MenuItem("Save", "Ctrl+S")) {}
             if (ImGui::MenuItem("Save as..", "Ctrl+Shift+S")) {}
-
             ImGui::Separator();
             if (ImGui::MenuItem("Quit")) visible = false;
-
             ImGui::EndMenu();
         }
 
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("Undo", "Ctrl+Z")) {}
             if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) {}
-
             ImGui::Separator();
             if (ImGui::MenuItem("Copy", "Ctrl+C")) {}
             if (ImGui::MenuItem("Cut", "Ctrl+X")) {}
             if (ImGui::MenuItem("Paste", "Ctrl+P")) {}
-
             ImGui::Separator();
-            if (ImGui::MenuItem("Execute Script", "Ctrl+F")) if (!executedScript) ExecuteCurrentScript();
-            if (ImGui::MenuItem("Stop Script", "Ctrl+G")) if (executedScript) StopCurrentScript();
+            // Execute / Stop Buttons
+            if (ImGui::MenuItem("Execute Script", "Ctrl+F")) 
+                if (!executedScript) ExecuteCurrentScript();
+            
+            if (ImGui::MenuItem("Stop Script", "Ctrl+G")) 
+                if (executedScript) StopCurrentScript();
 
             ImGui::EndMenu();
         }
-
         ImGui::EndMenuBar();
     }
 
+    // Hotkeys
     if (IsKeyDown(KEY_LEFT_CONTROL)) {
         if (IsKeyPressed(KEY_F)) {
             if (!executedScript) ExecuteCurrentScript();
         }
-
         if (IsKeyPressed(KEY_G)) {
             if (executedScript) StopCurrentScript();
         }
@@ -137,4 +136,8 @@ void TextEditor::Draw() {
     ImGui::EndChild();
 
     ImGui::End();
+}
+
+void TextEditor::OnLog(const std::string& message) {
+    history.push_back(message);
 }
