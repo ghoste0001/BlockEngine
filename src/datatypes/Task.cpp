@@ -7,7 +7,7 @@ static const char* luaGlobals[] = {
     "game", "workspace", "script", "shared", "plugin", nullptr
 };
 
-std::unique_ptr<LuaTask> Task_Run(lua_State* L, std::string& scriptText) {
+LuaTask* Task_Run(lua_State* L, std::string& scriptText) {
     size_t bcSize;
     lua_CompileOptions opts{};
     opts.optimizationLevel = 1;
@@ -17,7 +17,7 @@ std::unique_ptr<LuaTask> Task_Run(lua_State* L, std::string& scriptText) {
     const char* bytecode = luau_compile(scriptText.c_str(), scriptText.size(), &opts, &bcSize);
     if (!bytecode || bcSize == 0) {
         if (bytecode) free((void*)bytecode);
-        return 0;
+        return nullptr;
     }
 
     auto task = std::make_unique<LuaTask>(L);
@@ -31,7 +31,7 @@ std::unique_ptr<LuaTask> Task_Run(lua_State* L, std::string& scriptText) {
         const char* err = lua_tostring(thread, -1);
         printf("Error loading script: %s\n", err);
         lua_pop(thread, 1);
-        return 0;
+        return nullptr;
     }
 
     task->WakeTime = GetTime();
