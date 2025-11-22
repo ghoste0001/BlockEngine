@@ -21,6 +21,7 @@ std::unique_ptr<LuaTask> Task_Run(lua_State* L, std::string& scriptText) {
     }
 
     auto task = std::make_unique<LuaTask>(L);
+    LuaTask* taskPtr = task.get();
     lua_State* thread = task->thread;
 
     int loadStatus = luau_load(thread, "ScriptChunk", bytecode, bcSize, 0);
@@ -36,7 +37,7 @@ std::unique_ptr<LuaTask> Task_Run(lua_State* L, std::string& scriptText) {
     task->WakeTime = GetTime();
     g_tasks.push_back(std::move(task));
 
-    return task;
+    return taskPtr;
 }
 
 int Task_TryRun(lua_State* L, std::string& scriptText) {
