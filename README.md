@@ -1,8 +1,8 @@
-# BlockEngine (Demo)
+# BlockEngine (Demo) [![Release Build](https://github.com/ghoste0001/BlockEngine/actions/workflows/release.yml/badge.svg)](https://github.com/ghoste0001/BlockEngine/actions/workflows/release.yml)
 <img src="repo/BlockEngineCard.png"/>
 <a href="https://discord.gg/xMPCsx3dNf" style="text-decoration:none;">
-    <img src="https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=white&style=for-the-badge" alt="Discord"/>
-</a>
+    <img src="https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=white&style=for-the-badge" alt="Discord"/> 
+</a> 
 
 ## Supported Platforms
 - Linux
