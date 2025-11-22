@@ -7,6 +7,7 @@ static const char* luaGlobals[] = {
     "game", "workspace", "script", "shared", "plugin", nullptr
 };
 
+// FIXED: Return type is LuaTask*
 LuaTask* Task_Run(lua_State* L, std::string& scriptText) {
     size_t bcSize;
     lua_CompileOptions opts{};
@@ -21,7 +22,7 @@ LuaTask* Task_Run(lua_State* L, std::string& scriptText) {
     }
 
     auto task = std::make_unique<LuaTask>(L);
-    LuaTask* taskPtr = task.get();
+    LuaTask* taskPtr = task.get(); // Save the raw pointer to return later
     lua_State* thread = task->thread;
 
     int loadStatus = luau_load(thread, "ScriptChunk", bytecode, bcSize, 0);
@@ -35,13 +36,14 @@ LuaTask* Task_Run(lua_State* L, std::string& scriptText) {
     }
 
     task->WakeTime = GetTime();
-    g_tasks.push_back(std::move(task));
+    g_tasks.push_back(std::move(task)); // Transfer ownership to the global vector
 
-    return taskPtr;
+    return taskPtr; // Return the raw pointer
 }
 
 int Task_TryRun(lua_State* L, std::string& scriptText) {
-    std::unique_ptr<LuaTask> task = Task_Run(L, scriptText);
+    // FIXED: Store result as raw pointer
+    LuaTask* task = Task_Run(L, scriptText);
     if (!task) {
         return 0;
     }
@@ -133,4 +135,3 @@ void Task_Bind(lua_State* L) {
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, "_TASK_THREADS");
 }
-
