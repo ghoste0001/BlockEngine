@@ -28,7 +28,9 @@ struct LuaTask {
 
 extern std::vector<std::unique_ptr<LuaTask>> g_tasks;
 
+// FIXED: Returns raw pointer instead of unique_ptr
 LuaTask* Task_Run(lua_State* L, std::string& scriptText);
+
 int Task_TryRun(lua_State* L, std::string& scriptText);
 
 void TaskScheduler_Step(void);
