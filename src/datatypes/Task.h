@@ -28,7 +28,7 @@ struct LuaTask {
 
 extern std::vector<std::unique_ptr<LuaTask>> g_tasks;
 
-std::unique_ptr<LuaTask> Task_Run(lua_State* L, std::string& scriptText);
+LuaTask* Task_Run(lua_State* L, std::string& scriptText);
 int Task_TryRun(lua_State* L, std::string& scriptText);
 
 void TaskScheduler_Step(void);
