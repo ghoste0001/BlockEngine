@@ -7,13 +7,41 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-
+  # --- WINDOWS BUILD ---
+  build-windows:
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
 
-    # FIXED: Added OpenGL (libgl1-mesa-dev) and Audio (libasound2-dev) dependencies
+    # Windows doesn't need 'apt-get'. We just fetch the repos.
+    - name: Fetch Dependencies
+      shell: bash
+      run: |
+        mkdir -p dependencies
+        git clone https://github.com/luau-lang/luau.git dependencies/luau
+        git clone https://github.com/raysan5/raylib.git dependencies/raylib
+        git clone https://github.com/ocornut/imgui.git dependencies/imgui
+        git clone https://github.com/raylib-extras/rlImGui.git dependencies/rlImGui
+
+    # Visual Studio handles the generators automatically on windows-latest
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build --config Release -j4
+
+    # On Windows, the .exe is inside the Release folder
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: BlockEngine-Windows
+        path: build/Release/BlockEngine.exe
+  # --- LINUX BUILD ---
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
     - name: Install System Dependencies
       run: |
         sudo apt-get update
@@ -33,13 +61,9 @@ jobs:
     - name: Build
       run: cmake --build build --config Release -j$(nproc)
 
-    - name: Zip Release
-      run: |
-        cd build
-        zip -r BlockEngine_Linux.zip BlockEngine
-
-    - name: Upload Artifact
+    # CHANGED: We upload the binary directly. GitHub will zip it for us.
+    - name: Upload Linux Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Linux-Release
-        path: build/BlockEngine_Linux.zip
+        name: BlockEngine-Linux
+        path: build/BlockEngine
