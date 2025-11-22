@@ -8,3 +8,4 @@ dependencies/*
 
 # IDE
 .vscode/
+/build_mingw
