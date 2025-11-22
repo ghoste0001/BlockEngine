@@ -17,6 +17,10 @@ set(DEPS_DIR "${CMAKE_SOURCE_DIR}/dependencies")
 
 # Add luau
 if(EXISTS "${DEPS_DIR}/luau/CMakeLists.txt")
+    # Disable Luau tests and CLI tools (we only need the library)
+    set(LUAU_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(LUAU_BUILD_CLI OFF CACHE BOOL "" FORCE)
+
     add_subdirectory(${DEPS_DIR}/luau)
     set(LUAU_FOUND TRUE)
 else()
