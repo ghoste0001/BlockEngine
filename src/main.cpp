@@ -179,8 +179,13 @@ int main(int argc, char** argv) {
         right = Vector3Normalize(right);
 
         Vector3 up = Vector3CrossProduct(forward, right);
-
+        
         Vector3 delta = {0, 0, 0};
+        
+        // fullscreen go brrrr (not exclusive fullscreen)
+        if (IsKeyPressed(KEY_F11)) {
+            ToggleBorderlessWindowed();
+        }
 
         if (!ImGui::IsAnyItemActive()) {
             if (IsKeyDown(KEY_W)) delta = Vector3Add(delta, Vector3Scale(forward, moveSpeed));
