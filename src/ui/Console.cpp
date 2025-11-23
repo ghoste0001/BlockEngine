@@ -68,8 +68,8 @@ void Console::ExecCommand(std::string text) {
         Console::Log("- help: show this message");
         Console::Log("- controls: controls for the camera");
         Console::Log("- clear: clear console output");
-        Console::Log("- lua <string>: execute text as lua script");
         Console::Log("- luatasks: get number of tasks running");
+        Console::Log("- anything else: execute text as lua script");
     } else if (cmd == "clear") {
         Console::ClearLog();
     } else if (cmd == "controls") {
@@ -79,21 +79,14 @@ void Console::ExecCommand(std::string text) {
         Console::Log("- Space, E: go upward");
         Console::Log("- Q: go downward");
         Console::Log("- Scroll: move toward/away from cursor");
-    } else if (cmd == "lua") {
-        std::string scriptText = subStrAfterChar(text, " ");
-        if (scriptText.empty()) {
-            Console::Error("You must provide text to execute as a lua script!");
-            return;
-        }
-
-        if (!Task_TryRun(L_main, scriptText)) {
-            Console::Error("Failed to execute lua script");
-        }
     } else if (cmd == "luatasks") {
         Console::Log(std::to_string(g_tasks.size()));
     } else {
-        Console::Error("Unknown command: " + cmd);
-        Console::Log("Type 'help' for a list of commands");
+        if (!text.empty()) {
+            if (!Task_TryRun(L_main, text)) {
+                Console::Error("Failed to execute lua script");
+            }
+        }
     }
 }
 
@@ -139,7 +132,7 @@ void Console::Draw() {
 
     ImGui::Separator();
 
-    bool reclaim_focus = false;
+    // bool reclaim_focus = false; -- unused
     ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_CallbackHistory;
     if (ImGui::InputText("Input", inputBuf, IM_ARRAYSIZE(inputBuf), input_text_flags, &TextEditCallback)) {
         std::string input = inputBuf;

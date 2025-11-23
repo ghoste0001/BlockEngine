@@ -44,16 +44,15 @@ void RenderFrame(Camera3D camera) {
     BeginDrawing();
     ClearBackground(backgroundColor);
 
-    //BeginMode3D(camera);
     RenderScene(camera, g_instances);
-    //EndMode3D();
 
     if (ImGui::IsAnyItemActive()) {
-        DrawText("Item Active", 20, 20, 20, GREEN);
+        DrawText("Item Active", 20, 50, 20, GREEN);
     } else {
-        DrawText("No Item Active", 20, 20, 20, RED);
+        DrawText("No Item Active", 20, 50, 20, RED);
     }
-
+    std::string fpsText = "FPS: " + std::to_string(GetFPS());
+    DrawText(fpsText.c_str(), 20, 20, 20, WHITE);
     rlImGuiBegin();
     for (auto gui :g_guis)
         gui->Draw();
@@ -87,7 +86,8 @@ int main(int argc, char** argv) {
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(1280, 720, "BlockEngine");
-    SetTargetFPS(500);
+    MaximizeWindow();
+    SetTargetFPS(GetMonitorRefreshRate(GetCurrentMonitor()));
 
     //SetExitKey(KEY_NULL);
 
@@ -99,8 +99,7 @@ int main(int argc, char** argv) {
     PrepareRenderer();
 
     bool rotatingCamera = false;
-    bool warpThisFrame = false;
-    Vector2 anchorPos = {0, 0};
+    Vector2 anchorPos = {0, 0}; 
     Vector3 worldUp = {0, 1, 0};
 
     g_camera = {};
@@ -127,53 +126,47 @@ int main(int argc, char** argv) {
     scriptEditor.SetLuaState(L_main);
     scriptEditor.SetVisible(true);
 
+    
     while (!WindowShouldClose()) {
-        //const double time = GetTime();
         const double deltaTime = GetFrameTime();
         float mouseWheelDelta = GetMouseWheelMove();
         float moveSpeed = 25.0f * deltaTime;
+
 
         if (IsKeyDown(KEY_LEFT_SHIFT)) {
             moveSpeed *= 0.25;
         }
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+        bool imguiWantsMouse = ImGui::GetIO().WantCaptureMouse;
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && !imguiWantsMouse) {
             anchorPos = GetMousePosition();
             rotatingCamera = true;
-            warpThisFrame = true;
         }
+        
         if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
             rotatingCamera = false;
-            warpThisFrame = false;
         }
 
         if (rotatingCamera) {
-            if (!warpThisFrame) {
-                Vector2 rotDelta = GetMouseDelta();
-                gYaw += rotDelta.x * 0.008f;
-                gPitch += -rotDelta.y * 0.008f;
+            Vector2 currentPos = GetMousePosition();
+            Vector2 rotDelta = Vector2Subtract(currentPos, anchorPos);
+            
+            if (rotDelta.x != 0.0f || rotDelta.y != 0.0f) {
+                gYaw += rotDelta.x * 0.002f; 
+                gPitch += -rotDelta.y * 0.002f;
 
                 const float limit = PI/2 - 0.01f;
                 if (gPitch > limit)  gPitch = limit;
                 if (gPitch < -limit) gPitch = -limit;
-            } else {
-                //SetMousePosition((int)anchorPos.x, (int)anchorPos.y);
+
+                SetMousePosition((int)anchorPos.x, (int)anchorPos.y);
             }
-
-            warpThisFrame = !warpThisFrame;
         }
 
-        if (mouseWheelDelta != 0) {
+        if (mouseWheelDelta != 0 && !imguiWantsMouse) {
             Ray screenRay = GetScreenToWorldRay(GetMousePosition(), g_camera);
-            g_camera.position += screenRay.direction * mouseWheelDelta;
-        }
-
-        if (!ImGui::IsAnyItemFocused()) {
-            float rotSpeed  = 2.0f * deltaTime;
-            if (IsKeyDown(KEY_RIGHT)) gYaw += rotSpeed;
-            if (IsKeyDown(KEY_LEFT)) gYaw -= rotSpeed;
-            if (IsKeyDown(KEY_UP)) gPitch += rotSpeed;
-            if (IsKeyDown(KEY_DOWN)) gPitch -= rotSpeed;
+            g_camera.position = Vector3Add(g_camera.position, Vector3Scale(screenRay.direction, mouseWheelDelta));
         }
 
         Vector3 forward = {
@@ -189,12 +182,24 @@ int main(int argc, char** argv) {
         Vector3 up = Vector3CrossProduct(forward, right);
 
         Vector3 delta = {0, 0, 0};
-        if (IsKeyDown(KEY_W)) delta = Vector3Add(delta, Vector3Scale(forward, moveSpeed));
-        if (IsKeyDown(KEY_S)) delta = Vector3Subtract(delta, Vector3Scale(forward, moveSpeed));
-        if (IsKeyDown(KEY_D)) delta = Vector3Subtract(delta, Vector3Scale(right,   moveSpeed));
-        if (IsKeyDown(KEY_A)) delta = Vector3Add(delta, Vector3Scale(right,   moveSpeed));
-        if (IsKeyDown(KEY_SPACE) || IsKeyDown(KEY_E)) delta = Vector3Add(delta, Vector3Scale(up, moveSpeed));
-        if (IsKeyDown(KEY_Q)) delta = Vector3Subtract(delta, Vector3Scale(up, moveSpeed));
+
+        if (!ImGui::IsAnyItemActive()) {
+            if (IsKeyDown(KEY_W)) delta = Vector3Add(delta, Vector3Scale(forward, moveSpeed));
+            if (IsKeyDown(KEY_S)) delta = Vector3Subtract(delta, Vector3Scale(forward, moveSpeed));
+            if (IsKeyDown(KEY_D)) delta = Vector3Subtract(delta, Vector3Scale(right,   moveSpeed));
+            if (IsKeyDown(KEY_A)) delta = Vector3Add(delta, Vector3Scale(right,   moveSpeed));
+            if (IsKeyDown(KEY_SPACE) || IsKeyDown(KEY_E)) delta = Vector3Add(delta, Vector3Scale(up, moveSpeed));
+            if (IsKeyDown(KEY_Q)) delta = Vector3Subtract(delta, Vector3Scale(up, moveSpeed));
+
+            float rotSpeed  = 2.0f * deltaTime;
+            if (IsKeyDown(KEY_RIGHT)) gYaw += rotSpeed;
+            if (IsKeyDown(KEY_LEFT)) gYaw -= rotSpeed;
+            if (IsKeyDown(KEY_UP)) gPitch += rotSpeed;
+            if (IsKeyDown(KEY_DOWN)) gPitch -= rotSpeed;
+
+            if (IsKeyPressed(KEY_LEFT_BRACKET)) console.SetVisible(!console.IsVisible());
+            if (IsKeyPressed(KEY_RIGHT_BRACKET)) scriptEditor.SetVisible(!scriptEditor.IsVisible());
+        }
 
         g_camera.position = Vector3Add(g_camera.position, delta);
         g_camera.target = Vector3Add(g_camera.position, forward);

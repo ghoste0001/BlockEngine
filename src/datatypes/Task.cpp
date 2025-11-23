@@ -22,7 +22,7 @@ LuaTask* Task_Run(lua_State* L, std::string& scriptText) {
     }
 
     auto task = std::make_unique<LuaTask>(L);
-    LuaTask* taskPtr = task.get(); // Save the raw pointer to return later
+    LuaTask* taskPtr = task.get();
     lua_State* thread = task->thread;
 
     int loadStatus = luau_load(thread, "ScriptChunk", bytecode, bcSize, 0);
@@ -36,13 +36,12 @@ LuaTask* Task_Run(lua_State* L, std::string& scriptText) {
     }
 
     task->WakeTime = GetTime();
-    g_tasks.push_back(std::move(task)); // Transfer ownership to the global vector
+    g_tasks.push_back(std::move(task));
 
-    return taskPtr; // Return the raw pointer
+    return taskPtr;
 }
 
 int Task_TryRun(lua_State* L, std::string& scriptText) {
-    // FIXED: Store result as raw pointer
     LuaTask* task = Task_Run(L, scriptText);
     if (!task) {
         return 0;
