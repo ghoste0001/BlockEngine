@@ -1,6 +1,10 @@
 #include "Console.h"
 #include <raylib.h>
 #include <string>
+#include <chrono>
+#include <ctime>
+#include <cstdio>
+#include <stdexcept>
 
 #include "../../dependencies/luau/VM/include/lua.h"
 
@@ -32,6 +36,28 @@ std::string trim(const std::string& line) {
     return start == end ? std::string() : line.substr(start, end - start + 1);
 }
 
+std::string GetTimestamp() {
+    using namespace std::chrono;
+
+    auto now = system_clock::now();
+    auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+    
+    std::time_t t = system_clock::to_time_t(now);
+    std::tm tm_buf;
+
+    #if defined(_WIN32) || defined(_WIN64)
+        localtime_s(&tm_buf, &t);
+    #else
+        localtime_r(&t, &tm_buf);
+    #endif
+
+    char buffer[16];
+    std::snprintf(buffer, sizeof(buffer), "[%02d:%02d:%02d.%03d]", 
+                  tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec, (int)ms.count());
+
+    return std::string(buffer);
+}
+
 void Console::ClearLog() {
     history.clear();
     colors.clear();
@@ -44,7 +70,12 @@ void Console::Reset() {
 }
 
 void Console::Log(std::string text, ImVec4 color) {
-    history.push_back(text);
+    // add max history size (cause it was starting to lag after a while)
+    if (history.size() >= 2000) {
+        history.erase(history.begin());
+        colors.erase(colors.begin());
+    }
+    history.push_back(GetTimestamp()+" "+text);
     colors.push_back(color);
 }
 
@@ -66,6 +97,7 @@ void Console::ExecCommand(std::string text) {
     if (cmd == "help") {
         Console::Log("Commands:");
         Console::Log("- help: show this message");
+        Console::Log("- max_fps <int>: set the maximum fps");
         Console::Log("- controls: controls for the camera");
         Console::Log("- clear: clear console output");
         Console::Log("- luatasks: get number of tasks running");
@@ -81,6 +113,23 @@ void Console::ExecCommand(std::string text) {
         Console::Log("- Scroll: move toward/away from cursor");
     } else if (cmd == "luatasks") {
         Console::Log(std::to_string(g_tasks.size()));
+        } else if (cmd == "max_fps") {
+        size_t firstSpace = text.find(' ');
+        size_t pos = (firstSpace == std::string::npos) ? std::string::npos : text.find_first_not_of(" \t", firstSpace + 1);
+        std::string scriptText = (pos == std::string::npos) ? std::string() : text.substr(pos);
+        try {
+            int fps = std::stoi(scriptText);
+            if (fps < 10) {
+            Console::Error("FPS must be at least 10");
+            return;
+            }
+            Console::Log("Changed max fps to " + std::to_string(fps));
+            SetTargetFPS(fps);
+        } catch (const std::invalid_argument&) {
+            Console::Error("Invalid fps value: not a number");
+        } catch (const std::out_of_range&) {
+            Console::Error("Invalid fps value: out of range");
+        }
     } else {
         if (!text.empty()) {
             if (!Task_TryRun(L_main, text)) {

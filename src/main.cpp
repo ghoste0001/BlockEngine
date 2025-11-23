@@ -131,30 +131,29 @@ int main(int argc, char** argv) {
         const double deltaTime = GetFrameTime();
         float mouseWheelDelta = GetMouseWheelMove();
         float moveSpeed = 25.0f * deltaTime;
-
+        
 
         if (IsKeyDown(KEY_LEFT_SHIFT)) {
             moveSpeed *= 0.25;
         }
-
+        
         bool imguiWantsMouse = ImGui::GetIO().WantCaptureMouse;
-
+        
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && !imguiWantsMouse) {
             anchorPos = GetMousePosition();
             rotatingCamera = true;
         }
         
-        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT) ) {
             rotatingCamera = false;
         }
 
         if (rotatingCamera) {
-            Vector2 currentPos = GetMousePosition();
-            Vector2 rotDelta = Vector2Subtract(currentPos, anchorPos);
-            
-            if (rotDelta.x != 0.0f || rotDelta.y != 0.0f) {
-                gYaw += rotDelta.x * 0.002f; 
-                gPitch += -rotDelta.y * 0.002f;
+            Vector2 mouseDelta = GetMouseDelta();
+
+            if (mouseDelta.x != 0.0f || mouseDelta.y != 0.0f) {
+                gYaw += mouseDelta.x * 0.002f; 
+                gPitch += -mouseDelta.y * 0.002f;
 
                 const float limit = PI/2 - 0.01f;
                 if (gPitch > limit)  gPitch = limit;
