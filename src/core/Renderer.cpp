@@ -68,7 +68,7 @@ void DrawPart(const Part part) {
     rlPopMatrix();
 }
 
-void RenderScene(Camera3D g_camera, const std::vector<BasePart*> g_instances) {
+void RenderScene(const Camera3D& g_camera, const std::vector<BasePart*>& g_instances) {
     BeginMode3D(g_camera);
     DrawSkybox();
 
