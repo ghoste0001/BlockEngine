@@ -18,5 +18,5 @@ extern Texture2D g_defaultTexture;
 Texture2D GenerateDefaultTexture(int width = 128, int height = 128);
 
 void PrepareRenderer();
-void RenderScene(Camera3D g_camera, const std::vector<Object*> g_instances);
+void RenderScene(Camera3D g_camera, const std::vector<BasePart*> g_instances);
 void UnprepareRenderer();

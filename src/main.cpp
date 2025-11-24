@@ -43,8 +43,9 @@ std::string readFile(const char* path) {
 void RenderFrame(Camera3D camera) {
     BeginDrawing();
     ClearBackground(backgroundColor);
-
+    //BeginMode3D(camera);
     RenderScene(camera, g_instances);
+    //EndMode3D();
 
     if (ImGui::IsAnyItemActive()) {
         DrawText("Item Active", 20, 50, 20, GREEN);
